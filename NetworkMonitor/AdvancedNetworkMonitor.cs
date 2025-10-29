@@ -107,7 +107,6 @@ namespace NetworkMonitor
             keyThread.Join();
         }
 
-
         private void CheckListeningServices()
         {
             try
@@ -129,6 +128,10 @@ namespace NetworkMonitor
                     if (IsReallySuspicious(listener.Port, processName, listener.Address))
                     {
                         foundSuspicious = true;
+
+                        // 🔈 REPRODUCIR SONIDO DE ALERTA
+                        PlayAlertSound(AlertType.Warning);
+
                         Console.ForegroundColor = ConsoleColor.Red;
                         Console.WriteLine($"   ⚠️  PUERTO SOSPECHOSO: {listener.Port}");
                         Console.WriteLine($"      Proceso: {processName} (PID: {pid})");
@@ -162,6 +165,7 @@ namespace NetworkMonitor
                 Console.WriteLine($"Error en CheckListeningServices: {ex.Message}");
             }
         }
+
 
         // NUEVO MÉTODO - Lógica mejorada para detectar amenazas reales
         private bool IsReallySuspicious(int port, string processName, IPAddress address)
@@ -200,7 +204,6 @@ namespace NetworkMonitor
             return true;
         }
 
-
         private void CheckEstablishedIncoming()
         {
             try
@@ -217,6 +220,10 @@ namespace NetworkMonitor
                     if (connection.State == TcpState.Established && IsRealIncomingConnection(connection))
                     {
                         foundIncoming = true;
+
+                        // 🔈 REPRODUCIR SONIDO DE ALERTA
+                        PlayAlertSound(AlertType.Critical);
+
                         string processName = GetProcessName(connection.ProcessId);
 
                         Console.ForegroundColor = ConsoleColor.Yellow;
@@ -241,7 +248,6 @@ namespace NetworkMonitor
                 Console.WriteLine($"Error en CheckEstablishedIncoming: {ex.Message}");
             }
         }
-
         private void CheckSuspiciousProcesses()
         {
             try
@@ -266,6 +272,9 @@ namespace NetworkMonitor
                 {
                     if (!IsProcessWhitelisted(process.Value))
                     {
+                        // 🔈 REPRODUCIR SONIDO DE ALERTA
+                        PlayAlertSound(AlertType.Info);
+
                         Console.ForegroundColor = ConsoleColor.Red;
                         Console.WriteLine($"   ⚠️  Proceso no whitelisted: {process.Value} (PID: {process.Key})");
                         Console.ResetColor();
@@ -284,6 +293,7 @@ namespace NetworkMonitor
                 Console.WriteLine($"Error en CheckSuspiciousProcesses: {ex.Message}");
             }
         }
+
 
         private bool IsRealIncomingConnection(NetworkConnection connection)
         {
@@ -507,17 +517,43 @@ namespace NetworkMonitor
             Console.WriteLine();
         }
 
-        private string GetProcessPath(int processId)
+        private void PlayAlertSound(AlertType alertType = AlertType.Critical)
         {
             try
             {
-                var process = Process.GetProcessById(processId);
-                return process.MainModule?.FileName ?? "No accessible";
+                switch (alertType)
+                {
+                    case AlertType.Critical:
+                        Console.Beep(800, 800);   // Sonido grave y largo - para amenazas críticas
+                        Thread.Sleep(100);
+                        Console.Beep(800, 800);   // Doble beep para mayor alerta
+                        break;
+
+                    case AlertType.Warning:
+                        Console.Beep(1000, 500);  // Sonido medio - para advertencias
+                        break;
+
+                    case AlertType.Info:
+                        Console.Beep(1200, 300);  // Sonido agudo y corto - para información
+                        break;
+
+                    default:
+                        Console.Beep(1000, 500);  // Sonido por defecto
+                        break;
+                }
             }
-            catch
+            catch (Exception ex)
             {
-                return "No accessible";
+                // Si Console.Beep falla, mostrar mensaje
+                Console.WriteLine($"🔊 ALERTA SONORA NO DISPONIBLE: {ex.Message}");
             }
+        }
+
+        public enum AlertType
+        {
+            Critical,
+            Warning,
+            Info
         }
     }
 }
