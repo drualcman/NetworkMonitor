@@ -1,5 +1,5 @@
 ﻿namespace NetworkMonitor;
-public class SecurityConfig
+internal class SecurityConfig
 {
     public List<int> WhitelistedPorts { get; set; }
     public List<string> WhitelistedProcesses { get; set; }

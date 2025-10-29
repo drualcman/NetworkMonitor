@@ -1,6 +1,4 @@
-﻿using NetworkMonitor;
-
-Console.Title = "Network Security Monitor";
+﻿Console.Title = "Network Security Monitor";
 Console.WriteLine("🚀 Monitor de Seguridad de Red Avanzado");
 Console.WriteLine("=========================================\n");
 

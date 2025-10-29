@@ -1,5 +1,5 @@
 ﻿namespace NetworkMonitor;
-public class NetworkConnection
+internal class NetworkConnection
 {
     public IPEndPoint LocalEndPoint { get; set; }
     public IPEndPoint RemoteEndPoint { get; set; }
