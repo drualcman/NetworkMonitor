@@ -18,6 +18,15 @@ internal class AdvancedNetworkMonitor
             {
                 var json = File.ReadAllText("security_config.json");
                 config = JsonSerializer.Deserialize<SecurityConfig>(json);
+
+                // Ensure case-insensitive dictionary even after reading from file
+                if (config.KnownSuspiciousProcesses is not null)
+                {
+                    config.KnownSuspiciousProcesses =
+                        new Dictionary<string, string>(
+                            config.KnownSuspiciousProcesses,
+                            StringComparer.OrdinalIgnoreCase);
+                }
             }
             else
             {
@@ -57,6 +66,15 @@ internal class AdvancedNetworkMonitor
                 "jhi_service", "slack"
             // NOTA: "powershell" NO está en la whitelist - eso está BIEN
             ],
+            KnownSuspiciousProcesses = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                { "PanGPS", "GlobalProtect VPN - Corporate software" },
+                { "embeddings-server", "AI Service - Legitimate" },
+                { "datagrip64", "JetBrains DataGrip - Legitimate IDE" },
+                { "com.docker.backend", "Docker Desktop - Legitimate" },
+                { "OneDrive.Sync.Service", "Microsoft OneDrive - Legitimate" },
+                { "jhi_service", "Intel Service - Legitimate" }
+            },
             CheckInterval = 5000,
             LogToFile = true
         };
@@ -110,7 +128,7 @@ internal class AdvancedNetworkMonitor
         try
         {
             Console.ForegroundColor = ConsoleColor.Cyan;
-            Console.WriteLine("🔍 SERVICIOS ESCUCHANDO:");
+            Console.WriteLine("SERVICIOS ESCUCHANDO:");
             Console.ResetColor();
 
             var properties = IPGlobalProperties.GetIPGlobalProperties();
@@ -127,11 +145,11 @@ internal class AdvancedNetworkMonitor
                 {
                     foundSuspicious = true;
 
-                    // 🔈 REPRODUCIR SONIDO DE ALERTA
-                    PlayAlertSound(AlertType.Warning);
+                    //REPRODUCIR SONIDO DE ALERTA
+                    PlayAlertSound(AlertType.Critical);
 
                     Console.ForegroundColor = ConsoleColor.Red;
-                    Console.WriteLine($"   ⚠️  PUERTO SOSPECHOSO: {listener.Port}");
+                    Console.WriteLine($"    PUERTO SOSPECHOSO: {listener.Port}");
                     Console.WriteLine($"      Proceso: {processName} (PID: {pid})");
                     Console.WriteLine($"      Dirección: {listener.Address}");
                     Console.ResetColor();
@@ -144,7 +162,7 @@ internal class AdvancedNetworkMonitor
                     if (processName != "System" && processName != "svchost" && processName != "Desconocido")
                     {
                         Console.ForegroundColor = ConsoleColor.Green;
-                        Console.WriteLine($"   ✅ Puerto: {listener.Port} - Proceso: {processName}");
+                        Console.WriteLine($"   Puerto: {listener.Port} - Proceso: {processName}");
                         Console.ResetColor();
                     }
                 }
@@ -153,7 +171,7 @@ internal class AdvancedNetworkMonitor
             if (!foundSuspicious)
             {
                 Console.ForegroundColor = ConsoleColor.Green;
-                Console.WriteLine("   ✅ No se encontraron servicios sospechosos");
+                Console.WriteLine("   No se encontraron servicios sospechosos");
                 Console.ResetColor();
             }
             Console.WriteLine();
@@ -207,7 +225,7 @@ internal class AdvancedNetworkMonitor
         try
         {
             Console.ForegroundColor = ConsoleColor.Cyan;
-            Console.WriteLine("🌐 CONEXIONES ESTABLECIDAS ENTRANTES:");
+            Console.WriteLine("CONEXIONES ESTABLECIDAS ENTRANTES:");
             Console.ResetColor();
 
             var connections = GetAllNetworkConnections();
@@ -219,13 +237,13 @@ internal class AdvancedNetworkMonitor
                 {
                     foundIncoming = true;
 
-                    // 🔈 REPRODUCIR SONIDO DE ALERTA
-                    PlayAlertSound(AlertType.Critical);
+                    //REPRODUCIR SONIDO DE ALERTA
+                    PlayAlertSound(AlertType.Warning);
 
                     string processName = GetProcessName(connection.ProcessId);
 
                     Console.ForegroundColor = ConsoleColor.Yellow;
-                    Console.WriteLine($"   🔄 Conexión entrante establecida:");
+                    Console.WriteLine($"    Conexión entrante establecida:");
                     Console.WriteLine($"      Local: {connection.LocalEndPoint}");
                     Console.WriteLine($"      Remoto: {connection.RemoteEndPoint}");
                     Console.WriteLine($"      Proceso: {processName}");
@@ -236,7 +254,7 @@ internal class AdvancedNetworkMonitor
             if (!foundIncoming)
             {
                 Console.ForegroundColor = ConsoleColor.Green;
-                Console.WriteLine("   ✅ No hay conexiones entrantes establecidas");
+                Console.WriteLine("   No hay conexiones entrantes establecidas");
                 Console.ResetColor();
             }
             Console.WriteLine();
@@ -251,7 +269,7 @@ internal class AdvancedNetworkMonitor
         try
         {
             Console.ForegroundColor = ConsoleColor.Cyan;
-            Console.WriteLine("📊 PROCESOS CON CONEXIONES DE RED:");
+            Console.WriteLine("PROCESOS CON CONEXIONES DE RED:");
             Console.ResetColor();
 
             var processes = new Dictionary<int, string>();
@@ -270,17 +288,17 @@ internal class AdvancedNetworkMonitor
             {
                 if (!IsProcessWhitelisted(process.Value))
                 {
-                    // 🔈 REPRODUCIR SONIDO DE ALERTA
+                    // REPRODUCIR SONIDO DE ALERTA
                     PlayAlertSound(AlertType.Info);
 
                     Console.ForegroundColor = ConsoleColor.Red;
-                    Console.WriteLine($"   ⚠️  Proceso no whitelisted: {process.Value} (PID: {process.Key})");
+                    Console.WriteLine($"    Proceso no whitelisted: {process.Value} (PID: {process.Key})");
                     Console.ResetColor();
                 }
                 else
                 {
                     Console.ForegroundColor = ConsoleColor.Green;
-                    Console.WriteLine($"   ✅ Proceso: {process.Value} (PID: {process.Key})");
+                    Console.WriteLine($"   Proceso: {process.Value} (PID: {process.Key})");
                     Console.ResetColor();
                 }
             }
@@ -304,19 +322,55 @@ internal class AdvancedNetworkMonitor
         // - O si el proceso está en nuestra lista de servicios conocidos
         if (connection.State == TcpState.Established)
         {
-            var knownServices = new List<string> { "PanGPS", "embeddings-server", "datagrip64" };
+            bool result = false;
             string processName = GetProcessName(connection.ProcessId);
 
-            // Si es un servicio conocido escuchando, es entrante
-            if (knownServices.Contains(processName) && connection.LocalEndPoint.Port <= 49151)
-                return true;
+            bool isWhitelisted = config.WhitelistedProcesses.Contains(processName);
+            bool isKnownSuspicious = config.KnownSuspiciousProcesses.ContainsKey(processName);
+            bool sameLocalMachine = IsSameLocalMachine(connection.LocalEndPoint, connection.RemoteEndPoint);
 
-            // Lógica original mejorada
-            return connection.LocalEndPoint.Port <= 1024 &&
-                   connection.RemoteEndPoint.Port > 49152;
+            if (!sameLocalMachine)
+            {
+                if ((isWhitelisted || isKnownSuspicious) && connection.LocalEndPoint.Port <= 49151)
+                {
+                    result = true;
+                }
+                else
+                {
+                    result = connection.LocalEndPoint.Port <= 1024 && connection.RemoteEndPoint.Port > 49152;
+                }
+            }
+            return result;
         }
 
         return false;
+    }
+
+    private bool IsSameLocalMachine(IPEndPoint local, IPEndPoint remote)
+    {
+        if (local == null || remote == null)
+        {
+            return false;
+        }
+
+        // Loopback directos (127.x.x.x o ::1)
+        if (IPAddress.IsLoopback(local.Address) && IPAddress.IsLoopback(remote.Address))
+        {
+            return true;
+        }
+
+        // Si ambas IPs son iguales
+        if (local.Address.Equals(remote.Address))
+        {
+            return true;
+        }
+
+        // Comprobamos si ambas pertenecen a alguna interfaz local
+        IPAddress[] localAddresses = Dns.GetHostAddresses(Dns.GetHostName());
+        bool localIsMine = localAddresses.Any(a => a.Equals(local.Address));
+        bool remoteIsMine = localAddresses.Any(a => a.Equals(remote.Address));
+
+        return localIsMine && remoteIsMine;
     }
 
     private bool IsWindowsServicePort(int port)
@@ -455,39 +509,29 @@ internal class AdvancedNetworkMonitor
     public void StopMonitoring()
     {
         isMonitoring = false;
-        Console.WriteLine("\n🛑 Monitoreo detenido.");
+        Console.WriteLine("\nMonitoreo detenido.");
     }
     private void CheckSuspiciousKnownProcesses()
     {
-        var suspiciousButKnown = new Dictionary<string, string>
-{
-    { "PanGPS", "GlobalProtect VPN - Software corporativo" },
-    { "embeddings-server", "Servicio de IA - Legítimo" },
-    { "datagrip64", "JetBrains DataGrip - IDE legítimo" },
-    { "com.docker.backend", "Docker Desktop - Legítimo" },
-    { "OneDrive.Sync.Service", "Microsoft OneDrive - Legítimo" },
-    { "jhi_service", "Servicio Intel - Legítimo" }
-};
-
         Console.ForegroundColor = ConsoleColor.Yellow;
-        Console.WriteLine("📋 PROCESOS CONOCIDOS CON CONEXIONES ENTRANTES:");
+        Console.WriteLine("PROCESOS CONOCIDOS CON CONEXIONES ENTRANTES:");
         Console.ResetColor();
 
         bool foundProcesses = false;
-
-        // Buscar conexiones establecidas entrantes reales
         var connections = GetAllNetworkConnections();
         var incomingProcesses = new Dictionary<int, string>();
 
         foreach (var connection in connections)
         {
-            // Solo procesos con conexiones entrantes establecidas
-            if (connection.State == TcpState.Established && IsRealIncomingConnection(connection))
+            if (connection.State == TcpState.Established)
             {
-                if (connection.ProcessId > 0)
+                string processName = GetProcessName(connection.ProcessId);
+
+                // Solo procesos conocidos
+                if (config.KnownSuspiciousProcesses.ContainsKey(processName))
                 {
-                    string processName = GetProcessName(connection.ProcessId);
-                    if (suspiciousButKnown.ContainsKey(processName))
+                    // Marcamos como "activo" si tiene conexiones establecidas (aunque sean locales)
+                    if (!incomingProcesses.ContainsKey(connection.ProcessId))
                     {
                         incomingProcesses[connection.ProcessId] = processName;
                     }
@@ -495,24 +539,53 @@ internal class AdvancedNetworkMonitor
             }
         }
 
-        // Mostrar solo los que tienen conexiones entrantes
         foreach (var process in incomingProcesses)
         {
             foundProcesses = true;
             Console.ForegroundColor = ConsoleColor.Yellow;
-            Console.WriteLine($"   ⚠️  {process.Value} (PID: {process.Key})");
-            Console.WriteLine($"      {suspiciousButKnown[process.Value]}");
-            Console.WriteLine($"      Tiene conexiones entrantes establecidas");
+            Console.WriteLine($"    {process.Value} (PID: {process.Key})");
+            Console.WriteLine($"      {config.KnownSuspiciousProcesses[process.Value]}");
+
+            // Mostrar detalle si tiene conexiones locales o externas
+            bool hasExternal = HasExternalConnection(process.Key);
+            if (hasExternal)
+            {
+                Console.WriteLine($"      Tiene conexiones ENTRANTES reales desde otra máquina");
+            }
+            else
+            {
+                Console.WriteLine($"      Tiene conexiones locales internas (revisar)");
+            }
+
             Console.ResetColor();
         }
 
         if (!foundProcesses)
         {
             Console.ForegroundColor = ConsoleColor.Green;
-            Console.WriteLine("   ✅ No hay procesos conocidos con conexiones entrantes");
+            Console.WriteLine("   No hay procesos conocidos con conexiones entrantes");
             Console.ResetColor();
         }
+
         Console.WriteLine();
+    }
+
+    private bool HasExternalConnection(int processId)
+    {
+        var connections = GetAllNetworkConnections();
+
+        foreach (var connection in connections)
+        {
+            if (connection.ProcessId == processId && connection.State == TcpState.Established)
+            {
+                if (!IsSameLocalMachine(connection.LocalEndPoint, connection.RemoteEndPoint))
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     private void PlayAlertSound(AlertType alertType = AlertType.Critical)
@@ -523,7 +596,7 @@ internal class AdvancedNetworkMonitor
             {
                 case AlertType.Critical:
                     Console.Beep(800, 800);   // Sonido grave y largo - para amenazas críticas
-                    Thread.Sleep(100);
+                    Thread.Sleep(50);
                     Console.Beep(800, 800);   // Doble beep para mayor alerta
                     break;
 
@@ -543,7 +616,7 @@ internal class AdvancedNetworkMonitor
         catch (Exception ex)
         {
             // Si Console.Beep falla, mostrar mensaje
-            Console.WriteLine($"🔊 ALERTA SONORA NO DISPONIBLE: {ex.Message}");
+            Console.WriteLine($"ALERTA SONORA NO DISPONIBLE: {ex.Message}");
         }
     }
 
