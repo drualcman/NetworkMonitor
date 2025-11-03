@@ -32,7 +32,7 @@ internal class ListeningServicesChecker : IAnalyzer
                 foundSuspicious = true;
                 alertPlayer.Play(AlertType.Critical);
                 Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine("   Suspicious port: " + listener.Port + " - Process: " + processName);
+                Console.WriteLine("   Suspicious port: " + listener.Port + " (" + listener.Address + ") - Process: " + processName);
                 Console.ResetColor();
             }
             else
@@ -40,7 +40,7 @@ internal class ListeningServicesChecker : IAnalyzer
                 if (processName != "System" && processName != "svchost" && processName != "Desconocido")
                 {
                     Console.ForegroundColor = ConsoleColor.Green;
-                    Console.WriteLine("   Port: " + listener.Port + " - Process: " + processName);
+                    Console.WriteLine("   Port: " + listener.Port + " (" + listener.Address + ") - Process: " + processName);
                     Console.ResetColor();
                 }
             }
