@@ -12,12 +12,16 @@ internal class ListeningServicesChecker : IAnalyzer
 
         IPGlobalProperties properties = IPGlobalProperties.GetIPGlobalProperties();
         IPEndPoint[] listeners = properties.GetActiveTcpListeners();
+        IPEndPoint[] uniqueListeners = listeners
+            .GroupBy(l => l.Port)
+            .Select(g => g.First())
+            .ToArray();
         bool foundSuspicious = false;
         int index = 0;
 
-        while (index < listeners.Length)
+        while (index < uniqueListeners.Length)
         {
-            IPEndPoint listener = listeners[index];
+            IPEndPoint listener = uniqueListeners[index];
             int pid = NetworkUtilities.GetProcessIdByPort(listener.Port);
             string processName = NetworkUtilities.GetProcessName(pid);
 
@@ -44,7 +48,7 @@ internal class ListeningServicesChecker : IAnalyzer
             index++;
             if (token.IsCancellationRequested)
             {
-                index += listeners.Length;
+                index += uniqueListeners.Length;
             }
         }
 
