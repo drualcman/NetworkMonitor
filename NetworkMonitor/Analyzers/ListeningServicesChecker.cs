@@ -11,9 +11,9 @@ internal class ListeningServicesChecker : IAnalyzer
         Console.ResetColor();
 
         IPGlobalProperties properties = IPGlobalProperties.GetIPGlobalProperties();
-        IPEndPoint[] listeners = properties.GetActiveTcpListeners();
-        IPEndPoint[] uniqueListeners = listeners
-            .GroupBy(l => l.Port)
+        IPEndPoint[] uniqueListeners = properties
+            .GetActiveTcpListeners()
+            .GroupBy(l => new { Address = l.Address.ToString(), Port = l.Port })
             .Select(g => g.First())
             .ToArray();
         bool foundSuspicious = false;
