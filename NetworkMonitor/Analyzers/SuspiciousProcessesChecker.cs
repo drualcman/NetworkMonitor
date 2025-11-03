@@ -60,7 +60,9 @@ internal class SuspiciousProcessesChecker : IAnalyzer
         bool result = false;
         if (!string.IsNullOrWhiteSpace(processName))
         {
-            result = config.WhitelistedProcesses.Contains(processName.ToLower());
+            result = config.WhitelistedProcesses.Any(
+                p => string.Equals(p, processName, StringComparison.OrdinalIgnoreCase)
+            );
         }
         return result;
     }

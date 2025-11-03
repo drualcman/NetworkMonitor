@@ -70,7 +70,7 @@ internal class ListeningServicesChecker : IAnalyzer
         {
             result = false;
         }
-        else if (config.WhitelistedProcesses.Contains(processName.ToLower()))
+        else if (config.WhitelistedProcesses.Any(p => string.Equals(p, processName, StringComparison.OrdinalIgnoreCase)))
         {
             result = false;
         }

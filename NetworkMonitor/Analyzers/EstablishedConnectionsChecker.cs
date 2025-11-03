@@ -61,7 +61,9 @@ internal class EstablishedConnectionsChecker : IAnalyzer
         {
             string processName = NetworkUtilities.GetProcessName(connection.ProcessId);
 
-            bool isWhitelisted = config.WhitelistedProcesses.Contains(processName);
+            bool isWhitelisted = config.WhitelistedProcesses.Any(
+                p => string.Equals(p, processName, StringComparison.OrdinalIgnoreCase)
+            );
             bool isKnownSuspicious = config.KnownSuspiciousProcesses.ContainsKey(processName);
             bool sameMachine = IsSameLocalMachine(connection.LocalEndPoint, connection.RemoteEndPoint);
 
