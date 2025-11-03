@@ -1,4 +1,4 @@
-﻿namespace NetworkMonitor;
+﻿namespace NetworkMonitor.Models;
 internal class NetworkConnection
 {
     public IPEndPoint LocalEndPoint { get; set; }

@@ -1,4 +1,8 @@
 global using NetworkMonitor;
+global using NetworkMonitor.Analyzers;
+global using NetworkMonitor.Config;
+global using NetworkMonitor.Core;
+global using NetworkMonitor.Models;
 global using System.Diagnostics;
 global using System.Net;
 global using System.Net.NetworkInformation;

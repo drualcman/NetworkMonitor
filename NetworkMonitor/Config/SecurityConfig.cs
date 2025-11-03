@@ -1,4 +1,4 @@
-﻿namespace NetworkMonitor;
+﻿namespace NetworkMonitor.Config;
 internal class SecurityConfig
 {
     public List<int> WhitelistedPorts { get; set; }

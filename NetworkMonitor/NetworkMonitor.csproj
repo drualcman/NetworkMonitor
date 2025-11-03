@@ -7,10 +7,4 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
-  <ItemGroup>
-    <Folder Include="Core\" />
-    <Folder Include="Analyzers\" />
-    <Folder Include="Models\" />
-  </ItemGroup>
-
 </Project>
