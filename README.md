@@ -48,10 +48,17 @@ El programa crea automáticamente el archivo security_config.json con esta estru
     "docker", "node", "python", "php",
     "pangps", "embeddings-server", "datagrip64",
     "com.docker.backend", "onedrive.sync.service",
-    "jhi_service", "slack"
+    "slack"
   ],
   "CheckInterval": 5000,
-  "LogToFile": true
+  "LogToFile": true,
+  "KnownSuspiciousProcesses": {
+    "PanGPS": "GlobalProtect VPN - Corporate software",
+    "embeddings-server": "AI Service - Legitimate",
+    "datagrip64": "JetBrains DataGrip - Legitimate IDE",
+    "com.docker.backend": "Docker Desktop - Legitimate",
+    "OneDrive.Sync.Service": "Microsoft OneDrive - Legitimate"
+  }
 }
 ```
 ### Personalización de Configuración
